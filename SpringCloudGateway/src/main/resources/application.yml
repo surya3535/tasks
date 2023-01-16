@@ -1,0 +1,81 @@
+server:
+  port: 8080
+
+ 
+spring:
+  application:
+    name: spring-cloud-gateway
+    
+ #gateway related configuration   
+  cloud:
+    gateway:
+      enabled: true
+      routes:
+      - id: ServiceA
+        uri: http://localhost:8081/
+        predicates:
+        - Path= /a/**
+        - Method= GET
+        filters:
+        - name: CircuitBreaker
+          args:
+            name: myCircuitBreaker1
+            fallbackuri: forward:/fallbackMethod/serviceAFallBackMethod
+            
+      - id: ServiceB
+        uri: http://localhost:8082/
+        predicates:
+        - Path= /b/**
+        - Method= GET
+        filters:
+        - name: CircuitBreaker
+          args:
+            name: myCircuitBreaker2
+            fallbackuri: forward:/fallbackMethod/serviceBFallBackMethod
+                 
+ #helth releted configuration means actuater configuration     
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+      
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+#circuit braker related configuration
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      myCircuitBreaker1:
+        register-health-indicator: true
+        sliding-window-type: count-based
+        slidingWindowSize: 5 
+        failureRateThreshold: 40 
+        minimum-number-of-calls: 5
+#       event-consumer-buffer-size: 10
+        automatic-transition-from-open-to-half-open-enabled: true 
+        slow-call-rate-threshold: 40  
+        wait-duration-in-open-state: 6s
+        slow-call-duration-threshold: 2s 
+        permittedNumberOfCallsInHalfOpenState: 2  #unit request          
+        writable-stack-trace-enabled: true
+        
+#  retry:
+#    instances:
+#      myCircuitBreaker1:
+#       max-attempts: 5
+#       wait-duration: 10s
+
+              
+           
+        
+
+         
+         
+            
